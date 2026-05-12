@@ -1,0 +1,21 @@
+[package]
+name = "gifboard"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cxx = "1.0.194"
+cxx-qt = "0.8.1"
+cxx-qt-lib = { version = "0.8.1", features = ["qt_full"] }
+gifboard-qml = { path = "../gifboard-qml" }
+
+
+smithay-client-toolkit = "0.20.0"
+wayland-client = "0.31.14"
+
+[build-dependencies]
+cxx-qt-build = { version = "0.8.1", features = ["link_qt_object_files"] }
+
+# [profile.dev]
+# opt-level = 1
+# debug = true

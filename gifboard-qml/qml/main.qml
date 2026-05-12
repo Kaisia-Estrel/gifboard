@@ -8,18 +8,16 @@ import com.estrel.gifboard 1.0
 
 ApplicationWindow {
     id: root
-    title: qsTr("Hello World")
+    title: qsTr("Gifboard")
     visible: true
-    visibility: Window.Windowed
+    // visibility: Window.AutomaticVisibility
     color: palette.window
 
-    height: 280
-    width: 240
+    height: 180
+    width: 540
     LayerShell.Window.layer: LayerShell.Window.LayerOverlay
     LayerShell.Window.anchors: LayerShell.Window.AnchorNone
-    // LayerShell.Window.keyboardInteractivity
     LayerShell.Window.exclusionZone: 0
-    flags: Qt.Popup
 
     Component.onCompleted: {}
 

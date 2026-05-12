@@ -74,3 +74,4 @@ compile_commands.json
 .direnv
 .qmlls.ini
 result
+result/

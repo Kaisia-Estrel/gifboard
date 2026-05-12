@@ -368,8 +368,32 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
+ "gifboard-qml",
  "smithay-client-toolkit",
  "wayland-client",
+]
+
+[[package]]
+name = "gifboard-core"
+version = "0.1.0"
+dependencies = [
+ "cxx",
+ "cxx-qt",
+ "cxx-qt-build",
+ "cxx-qt-lib",
+ "smithay-client-toolkit",
+ "wayland-client",
+]
+
+[[package]]
+name = "gifboard-qml"
+version = "0.1.0"
+dependencies = [
+ "cxx",
+ "cxx-qt",
+ "cxx-qt-build",
+ "cxx-qt-lib",
+ "gifboard-core",
 ]
 
 [[package]]
@@ -511,9 +535,9 @@ dependencies = [
 
 [[package]]
 name = "quick-xml"
-version = "0.39.3"
+version = "0.39.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "721da970c312655cde9b4ffe0547f20a8494866a4af5ff51f18b7c633d0c870b"
+checksum = "cdcc8dd4e2f670d309a5f0e83fe36dfdc05af317008fea29144da1a2ac858e5e"
 dependencies = [
  "memchr",
 ]

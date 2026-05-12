@@ -22,32 +22,31 @@
       devShells.x86_64-linux.default = pkgs.mkShell {
         packages = [
           pkgs.libxkbcommon
-          pkgs.fontconfig
-          pkgs.freetype
-          pkgs.zlib
-          pkgs.bzip2
-          pkgs.libpng
-          pkgs.brotli
-          pkgs.expat
           pkgs.libglvnd
 
           pkgs.binutils
           pkgs.clang-tools
           pkgs.cmake
+          pkgs.clang
           qtEnv
-
           pkgs.rustPackages.cargo
           pkgs.rustPackages.clippy
           pkgs.rustPackages.rustc
           pkgs.rustPackages.rustfmt
+          pkgs.lld
+          pkgs.ninja
+          pkgs.sccache
         ];
 
         nativeBuildInputs = [
+          qtEnv
           pkgs.pkg-config
         ];
 
-        LD_LIBRARY_PATH = "${pkgs.libxkbcommon}/lib";
+        LD_LIBRARY_PATH = "${pkgs.libxkbcommon}/lib:${qtEnv}/lib:${pkgs.stdenv.cc.cc.lib}/lib";
         QMAKE = "${qtEnv}/bin/qmake";
+        hardeningDisable = [ "fortify" ];
+        RUSTC_WRAPPER = "${pkgs.sccache}/bin/sccache";
       };
     };
 }
