@@ -33,6 +33,7 @@
           pkgs.rustPackages.clippy
           pkgs.rustPackages.rustc
           pkgs.rustPackages.rustfmt
+          pkgs.rust-analyzer
           pkgs.lld
           pkgs.ninja
           pkgs.sccache
