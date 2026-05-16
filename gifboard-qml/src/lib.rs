@@ -1,2 +1,2 @@
 pub fn register_types() {}
-pub mod myobject;
+pub mod search_results;
