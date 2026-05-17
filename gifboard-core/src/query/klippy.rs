@@ -109,7 +109,7 @@ fn attachment_from_result(
     };
 
     let output = match config.output_filetype {
-        config::Filetype::Gif => res.file.hd.gif,
+        config::Filetype::Gif => res.file.sm.gif,
         config::Filetype::Webp => res.file.hd.webp,
         config::Filetype::Jpg => res.file.hd.jpg,
         config::Filetype::Mp4 => res.file.hd.mp4,
@@ -128,10 +128,15 @@ fn attachment_from_result(
 
 pub(crate) async fn fetch_from_klippy(
     config: &config::Config,
+    page: usize,
     query: &str,
 ) -> std::io::Result<Vec<Attachment>> {
     if let Some(api_key) = config.klippy_api_key.as_ref() {
-        let params = [("q", query), ("page", "0"), ("per_page", "5")];
+        let params = [
+            ("q", query),
+            ("page", &page.to_string()),
+            ("per_page", "30"),
+        ];
         let client = reqwest::Client::new();
         let url = Url::parse_with_params(
             &format!("https://api.klipy.com/api/v1/{api_key}/gifs/search"),

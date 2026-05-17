@@ -42,16 +42,30 @@ ApplicationWindow {
         implicitHeight: messageText.implicitHeight + topPadding + bottomPadding + header.implicitHeight + footer.implicitHeight
     }
 
-    readonly property SearchResults searchResults: SearchResults {
+    property SearchResults searchResults: SearchResults {
         onQueryError: err => {
             errorDialog.message = err;
             errorDialog.open();
         }
 
         property var columnHeights: []
+
+        function resetHeights() {
+            let temp = [];
+            for (let i = 0; i < gifPreviews.columnCount; i++) {
+                temp.push(0);
+            }
+            columnHeights = temp;
+        }
+
         onReceivedResults: (uri, width, height) => {
-            if (gifPreviews.columnModels.length === 0)
+            if (gifPreviews.columnModels.length === 0) {
                 return;
+            }
+
+            if (columnHeights.length !== gifPreviews.columnCount) {
+                resetHeights();
+            }
 
             let shortestColumn = 0;
             let minHeight = Infinity;
@@ -59,24 +73,25 @@ ApplicationWindow {
             let colWidth = gifColumnRepeater.itemAt(0).width;
 
             for (let i = 0; i < gifPreviews.columnCount; i++) {
-                let colView = gifColumnRepeater.itemAt(i);
-                let curHeight = colView ? colView.contentHeight : 0;
-                if (curHeight < minHeight) {
-                    minHeight = curHeight;
+                let colHeight = columnHeights[i];
+                if (colHeight < minHeight) {
+                    minHeight = colHeight;
                     shortestColumn = i;
                 }
-                maxHeight = Math.max(maxHeight, curHeight);
-                console.log("-----");
-                console.log(i);
-                console.log(curHeight);
-                console.log(shortestColumn);
             }
+
             gifPreviews.columnModels[shortestColumn].append({
                 imageUri: uri,
                 imageHeight: height / (width / colWidth)
             });
+            columnHeights[shortestColumn] += height;
+        }
 
-            gifPreviews.contentHeight = maxHeight;
+        property var clearResults: () => {
+            resetHeights();
+            for (let i = 0; i < gifPreviews.columnCount; i++) {
+                gifPreviews.columnModels[i].clear();
+            }
         }
     }
 
@@ -96,7 +111,12 @@ ApplicationWindow {
         TextField {
             id: searchInput
             width: font.pixelSize * 50
-            onTextEdited: root.searchResults.query(searchInput.text)
+            onTextEdited: {
+                if (searchInput.text.length > 0) {
+                    root.searchResults.queryDebounced(searchInput.text);
+                }
+                root.searchResults.clearResults();
+            }
         }
 
         Item {
@@ -136,9 +156,6 @@ ApplicationWindow {
                             height: imageHeight
 
                             source: imageUri
-
-                            Component.onCompleted: console.log("Instantiated delegate " + model.index)
-                            Component.onDestruction: console.log("Culled delegate " + model.index)
                         }
                     }
                 }
@@ -152,7 +169,12 @@ ApplicationWindow {
                 clip: true
 
                 property real scrollPosition: 0
-                onContentYChanged: scrollPosition = contentY
+                onContentYChanged: {
+                    scrollPosition = contentY;
+                    if (contentHeight - scrollPosition < 2600) {
+                        root.searchResults.queryThrottled(searchInput.text);
+                    }
+                }
 
                 property int columnCount: 3
                 property var columnModels: []

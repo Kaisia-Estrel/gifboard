@@ -31,18 +31,18 @@ pub struct Attachment {
 // otherwise returns a std::io::result type
 type QueryMessage = Option<std::io::Result<Vec<Attachment>>>;
 type PrevQuery = Option<(mpsc::Sender<QueryMessage>, JoinHandle<()>)>;
-static DEBOUNCE: LazyLock<Mutex<PrevQuery>> = LazyLock::new(|| Mutex::new(None));
 
-async fn get_files(query: &str) -> std::io::Result<Vec<Attachment>> {
+async fn get_files(query: &str, page: usize) -> std::io::Result<Vec<Attachment>> {
     let mut attachments = vec![];
     let config = config::read_config()?;
-    attachments.append(&mut fetch_from_klippy(&config, query).await?);
+    attachments.append(&mut fetch_from_klippy(&config, page, query).await?);
 
     Ok(attachments)
 }
 
-async fn fetch_query_debounce(query: QString) -> mpsc::Receiver<QueryMessage> {
-    let (tx, rx) = mpsc::channel(2);
+static DEBOUNCE: LazyLock<Mutex<PrevQuery>> = LazyLock::new(|| Mutex::new(None));
+async fn fetch_query_debounced(query: QString, page: usize) -> mpsc::Receiver<QueryMessage> {
+    let (tx, rx) = mpsc::channel(1);
     let mut task = DEBOUNCE.lock().await;
 
     if let Some((old_tx, old)) = task.take() {
@@ -57,7 +57,7 @@ async fn fetch_query_debounce(query: QString) -> mpsc::Receiver<QueryMessage> {
         (tokio::spawn(async move {
             time::sleep(time::Duration::from_millis(500)).await;
 
-            match get_files(&query.to_string()).await {
+            match get_files(&query.to_string(), page).await {
                 Err(e) => {
                     let _ = tx.send(Some(Err(e))).await;
                 }
@@ -70,8 +70,39 @@ async fn fetch_query_debounce(query: QString) -> mpsc::Receiver<QueryMessage> {
 
     rx
 }
-pub async fn fetch_query(query: QString) -> std::io::Result<Option<Vec<Attachment>>> {
-    let mut rx = fetch_query_debounce(query).await;
+
+static THROTTLE: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+pub async fn fetch_query_throttled(query: QString, page: usize) -> mpsc::Receiver<QueryMessage> {
+    let (tx, rx) = mpsc::channel(1);
+    if let Ok(guard) = THROTTLE.try_lock() {
+        match get_files(&query.to_string(), page).await {
+            Err(e) => {
+                let _ = tx.send(Some(Err(e))).await;
+            }
+            Ok(files) => {
+                let _ = tx.send(Some(Ok(files))).await;
+            }
+        }
+        let _ = tokio::time::sleep(tokio::time::Duration::from_secs_f64(1.0)).await;
+        drop(guard);
+    } else {
+        let _ = tx.send(None).await;
+    }
+
+    rx
+}
+
+pub async fn fetch_query(
+    query: QString,
+    page: usize,
+    debounced: bool,
+) -> std::io::Result<Option<Vec<Attachment>>> {
+    let mut rx = if debounced {
+        fetch_query_debounced(query, page).await
+    } else {
+        fetch_query_throttled(query, page).await
+    };
+
     let result = rx
         .recv()
         .await
