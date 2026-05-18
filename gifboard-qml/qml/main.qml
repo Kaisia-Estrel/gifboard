@@ -117,6 +117,12 @@ ApplicationWindow {
                 }
                 root.searchResults.clearResults();
             }
+            onEditingFinished: {
+                if (searchInput.text.length > 0) {
+                    root.searchResults.queryDebounced(searchInput.text);
+                }
+                root.searchResults.clearResults();
+            }
         }
 
         Item {
@@ -144,7 +150,6 @@ ApplicationWindow {
                         spacing: 10
                         interactive: false
 
-                        contentY: gifPreviews.scrollPosition
                         onContentHeightChanged: gifPreviews.updateMaxHeight()
 
                         model: gifPreviews.columnModels[index]
@@ -154,6 +159,7 @@ ApplicationWindow {
                             required property int imageHeight
                             width: column.width
                             height: imageHeight
+                            fillMode: Image.PreserveAspectFit
 
                             source: imageUri
                         }
@@ -168,7 +174,6 @@ ApplicationWindow {
                 contentWidth: searchInput.width
                 clip: true
 
-                property real scrollPosition: 0
                 onContentYChanged: {
                     for (let i = 0; i < columnCount; i++) {
                         let columnListView = gifColumnRepeater.itemAt(i);

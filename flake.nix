@@ -15,6 +15,7 @@
         env "qt-custom-${qtbase.version}" [
           qtdeclarative
           pkgs.kdePackages.layer-shell-qt
+          pkgs.kdePackages.qtimageformats
         ];
     in
     {

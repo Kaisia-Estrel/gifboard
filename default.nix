@@ -20,6 +20,7 @@ let
     qt6.qtbase
     qt6.qtdeclarative
     kdePackages.layer-shell-qt
+    kdePackages.qtimageformats
   ];
 in
 rustPlatform.buildRustPackage

@@ -43,7 +43,7 @@ impl Default for Config {
             default_output_quality: ImageQuality::High,
             hover_quality: ImageQuality::High,
             preview_quality: ImageQuality::Low,
-            output_filetype: Filetype::Gif,
+            output_filetype: Filetype::Webp,
             play_preview: true,
             play_hover: true,
             disable_hover: false,
