@@ -3,14 +3,13 @@ name = "gifboard-qml"
 version = "0.1.0"
 edition = "2024"
 
-# [lib]
-# crate-type = ["cdylib"]
-
 [dependencies]
 gifboard-core = { path = "../gifboard-core" }
 cxx = "1.0.194"
 cxx-qt = "0.8.1"
 cxx-qt-lib = { version = "0.8.1", features = ["qt_full"] }
+xcb = { version = "1.7.0", features = ["xkb", "as-raw-xcb-connection"] }
+xkbcommon = { version = "0.9.0", features = ["x11"] }
 
 [build-dependencies]
 cxx-qt-build = { version = "0.8.1", features = ["link_qt_object_files"] }

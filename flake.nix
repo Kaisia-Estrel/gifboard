@@ -6,7 +6,7 @@
   };
 
   outputs =
-    { nixpkgs, ... }:
+    { self, nixpkgs, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -14,22 +14,34 @@
         with pkgs.qt6;
         env "qt-custom-${qtbase.version}" [
           qtdeclarative
+          qtbase
           pkgs.kdePackages.layer-shell-qt
           pkgs.kdePackages.qtimageformats
         ];
     in
     {
-      packages.${system}.default = pkgs.callPackage ./. { };
+      packages.${system} = {
+        gifboard = pkgs.callPackage ./. { };
+        default = self.packages.${system}.gifboard;
+      };
       devShells.x86_64-linux.default = pkgs.mkShell {
         packages = [
           pkgs.libxkbcommon
           pkgs.libglvnd
+          pkgs.libxcb
+          pkgs.libx11
+          qtEnv
+        ];
 
+        nativeBuildInputs = [
+          qtEnv
+          pkgs.libx11.dev
+
+          pkgs.pkg-config
           pkgs.binutils
           pkgs.clang-tools
           pkgs.cmake
           pkgs.clang
-          qtEnv
           pkgs.rustPackages.cargo
           pkgs.rustPackages.clippy
           pkgs.rustPackages.rustc
@@ -40,12 +52,13 @@
           pkgs.sccache
         ];
 
-        nativeBuildInputs = [
+        LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+          pkgs.libxkbcommon
+          pkgs.libxcb
+          pkgs.libx11
           qtEnv
-          pkgs.pkg-config
+          pkgs.stdenv.cc.cc.lib
         ];
-
-        LD_LIBRARY_PATH = "${pkgs.libxkbcommon}/lib:${qtEnv}/lib:${pkgs.stdenv.cc.cc.lib}/lib";
         QMAKE = "${qtEnv}/bin/qmake";
         hardeningDisable = [ "fortify" ];
         RUSTC_WRAPPER = "${pkgs.sccache}/bin/sccache";

@@ -13,6 +13,7 @@
   lib,
   stdenv,
   makeWrapper,
+  libxcb,
 }:
 let
 
@@ -39,6 +40,7 @@ rustPlatform.buildRustPackage
       clang-tools
       clang
       lld
+      libxcb
       makeWrapper
     ];
 
@@ -48,7 +50,7 @@ rustPlatform.buildRustPackage
       libglvnd
     ];
 
-    cargoHash = "sha256-bu+amylEZYvv+7g1ty70YZTUt9bpZM3JigtBz4mg4oA=";
+    cargoHash = "sha256-hVGTUNGi+PPfkWe955uUSxPO/MAloBadUhtjesPdSQI=";
 
     preCheck = ''
       export LD_LIBRARY_PATH="${
@@ -72,4 +74,8 @@ rustPlatform.buildRustPackage
           ]
         }"
     '';
+
+    meta = {
+      mainProgram = "gifboard";
+    };
   }

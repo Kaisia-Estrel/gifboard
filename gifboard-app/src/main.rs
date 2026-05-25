@@ -18,12 +18,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         engine.load(&QUrl::from("qrc:/qt/qml/com/estrel/gifboard/qml/main.qml"));
     }
 
+    if gifboard_qml::x11_manager::on_x11() {
+        unsafe {
+            gifboard_qml::x11_manager::ffi::install_x11_event_filter();
+        }
+    }
+
     if let Some(engine) = engine.as_mut() {
         let engine: Pin<&mut QQmlEngine> = engine.upcast_pin();
         // Listen to a signal from the QML Engine
         engine
             .on_quit(|_| {
                 println!("QML Quit!");
+                unsafe { gifboard_qml::x11_manager::ffi::delete_x11_event_filter() };
             })
             .release();
     }
