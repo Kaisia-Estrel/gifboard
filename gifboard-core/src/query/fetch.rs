@@ -22,7 +22,7 @@ pub struct Attachment {
     pub output_uri: AttachmentType,
     pub hover_uri: Option<AttachmentType>,
     pub preview_uri: AttachmentType,
-    pub blur_preview: Vec<u8>,
+    pub blur_preview: String,
     pub height: usize,
     pub width: usize,
 }

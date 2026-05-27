@@ -132,14 +132,84 @@ ApplicationWindow {
 
                         model: gifPreviews.columnModels[index]
 
-                        delegate: AnimatedImage {
-                            required property string imageUri
+                        delegate: Item {
+                            id: previewImageRoot
+                            required property string imagePreviewUri
+                            required property string imageHoverUri
+                            required property string imageOutputUri
                             required property int imageHeight
                             width: column.width
                             height: imageHeight
-                            fillMode: Image.PreserveAspectFit
+                            property bool hovered: false
+                            property bool hasHoverImage: imageHoverUri !== ""
 
-                            source: imageUri
+                            AnimatedImage {
+                                id: previewImage
+
+                                anchors.fill: parent
+                                fillMode: Image.PreserveAspectFit
+
+                                source: previewImageRoot.imagePreviewUri
+                                playing: true
+
+                                opacity: (!previewImageRoot.hasHoverImage || !previewImageRoot.hovered) ? 2 : 0
+
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: 360
+                                    }
+                                }
+                            }
+
+                            Loader {
+                                id: hoverLoader
+                                anchors.fill: parent
+                                active: previewImageRoot.hasHoverImage
+                                sourceComponent: AnimatedImage {
+                                    id: hoverImage
+
+                                    anchors.fill: parent
+                                    fillMode: Image.PreserveAspectFit
+
+                                    playing: previewImageRoot.hovered
+
+                                    property bool previouslyHovered: false
+
+                                    source: previouslyHovered ? previewImageRoot.imageHoverUri : ""
+
+                                    opacity: previewImageRoot.hovered ? 2 : 0
+
+                                    Behavior on opacity {
+                                        NumberAnimation {
+                                            duration: 240
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Timer so that hoverimages don't all loud when flicking through the browser
+                            Timer {
+                                id: hoverTimer
+                                interval: 300
+                                repeat: false
+                                onTriggered: {
+                                    hoverLoader.item.previouslyHovered = true;
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: previewImageRoot.hasHoverImage
+                                onEntered: {
+                                    previewImageRoot.hovered = true;
+                                    hoverLoader.item.currentFrame = previewImage.currentFrame;
+                                    hoverTimer.start();
+                                }
+                                onExited: {
+                                    previewImageRoot.hovered = false;
+                                    hoverTimer.stop();
+                                }
+                            }
                         }
                     }
                 }
@@ -207,7 +277,7 @@ ApplicationWindow {
             columnHeights = temp;
         }
 
-        onReceivedResults: (uri, width, height) => {
+        onReceivedResult: (output_uri, hover_uri, preview_uri, width, height) => {
             if (gifPreviews.columnModels.length === 0) {
                 return;
             }
@@ -230,7 +300,9 @@ ApplicationWindow {
             }
 
             gifPreviews.columnModels[shortestColumn].append({
-                imageUri: uri,
+                imageOutputUri: output_uri,
+                imageHoverUri: hover_uri,
+                imagePreviewUri: preview_uri,
                 imageHeight: height / (width / colWidth)
             });
             columnHeights[shortestColumn] += height;

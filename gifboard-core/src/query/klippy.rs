@@ -1,6 +1,4 @@
 use std::io;
-
-use base64::{Engine, prelude::BASE64_STANDARD};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 
@@ -63,18 +61,6 @@ fn attachment_from_result(
     res: KlippyResponseResult,
     config: &config::Config,
 ) -> io::Result<Attachment> {
-    let blur_preview = {
-        if let Some(b64_text) = res.blur_preview.strip_prefix("data:image/jpeg;base64,") {
-            BASE64_STANDARD
-                .decode(b64_text)
-                .map_err(|err| io::Error::other(err.to_string()))?
-        } else {
-            return Err(io::Error::other(
-                "Blur preview is not a base64 encoded jpeg",
-            ));
-        }
-    };
-
     let preview_uri = match config.preview_quality {
         config::ImageQuality::High if config.play_preview => {
             AttachmentType::Url(res.file.hd.webp.url.clone())
@@ -82,29 +68,33 @@ fn attachment_from_result(
         config::ImageQuality::High => AttachmentType::Url(res.file.hd.jpg.url.clone()),
 
         config::ImageQuality::Medium if config.play_preview => {
+            AttachmentType::Url(res.file.sm.webp.url.clone())
+        }
+        config::ImageQuality::Medium => AttachmentType::Url(res.file.sm.jpg.url.clone()),
+
+        config::ImageQuality::Low if config.play_preview => {
             AttachmentType::Url(res.file.xs.webp.url.clone())
         }
-        config::ImageQuality::Medium => AttachmentType::Url(res.file.xs.jpg.url.clone()),
-
-        config::ImageQuality::Low if config.play_preview => AttachmentType::RawJpg,
         config::ImageQuality::Low => AttachmentType::RawJpg,
     };
     let hover_uri = if config.disable_hover {
         None
     } else {
-        Some(match config.preview_quality {
-            config::ImageQuality::High if config.play_preview => {
+        Some(match config.hover_quality {
+            config::ImageQuality::High if config.play_hover => {
                 AttachmentType::Url(res.file.hd.webp.url.clone())
             }
             config::ImageQuality::High => AttachmentType::Url(res.file.hd.jpg.url.clone()),
 
-            config::ImageQuality::Medium if config.play_preview => {
+            config::ImageQuality::Medium if config.play_hover => {
                 AttachmentType::Url(res.file.md.webp.url.clone())
             }
             config::ImageQuality::Medium => AttachmentType::Url(res.file.md.jpg.url.clone()),
 
-            config::ImageQuality::Low if config.play_preview => AttachmentType::RawJpg,
-            config::ImageQuality::Low => AttachmentType::RawJpg,
+            config::ImageQuality::Low if config.play_hover => {
+                AttachmentType::Url(res.file.sm.webp.url.clone())
+            }
+            config::ImageQuality::Low => AttachmentType::Url(res.file.sm.jpg.url.clone()),
         })
     };
 
@@ -120,7 +110,7 @@ fn attachment_from_result(
         output_uri: AttachmentType::Url(output.url),
         hover_uri,
         preview_uri,
-        blur_preview,
+        blur_preview: res.blur_preview,
         height: output.height,
         width: output.width,
     })

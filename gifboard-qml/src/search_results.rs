@@ -26,19 +26,30 @@ pub mod qobject {
         fn query_error(self: Pin<&mut Self>, error: QString);
 
         #[qsignal]
-        #[cxx_name = "receivedResults"]
-        fn received_results(self: Pin<&mut Self>, url: QString, width: usize, height: usize);
+        #[cxx_name = "queryFinished"]
+        fn query_finished(self: Pin<&mut Self>, caught: bool);
+
+        #[qsignal]
+        #[cxx_name = "receivedResult"]
+        fn received_result(
+            self: Pin<&mut Self>,
+            output_uri: QString,
+            hover_uri: QString,
+            preview_uri: QString,
+            width: usize,
+            height: usize,
+        );
     }
     impl cxx_qt::Threading for SearchResults {}
 }
 
 #[derive(Default)]
 pub struct SearchResultsRust {
-    pub query_text: QString,
+    pub last_query: QString,
     pub current_page: usize,
 }
 
-use cxx_qt::Threading;
+use cxx_qt::{CxxQtType, Threading};
 use cxx_qt_lib::QString;
 use std::pin::Pin;
 
@@ -71,16 +82,40 @@ impl qobject::SearchResults {
                         .unwrap();
                     for attachment in attachments {
                         let output_uri = match attachment.output_uri {
-                            gifboard_core::query::AttachmentType::Url(s) => s,
-                            gifboard_core::query::AttachmentType::LocalFile(s) => s,
-                            gifboard_core::query::AttachmentType::RawJpg => todo!(),
+                            gifboard_core::query::AttachmentType::Url(s) => QString::from(s),
+                            gifboard_core::query::AttachmentType::LocalFile(s) => QString::from(s),
+                            gifboard_core::query::AttachmentType::RawJpg => {
+                                panic!("Output type should not use blur_preview")
+                            }
                         };
+
+                        let hover_uri = match attachment.hover_uri {
+                            Some(gifboard_core::query::AttachmentType::Url(s)) => QString::from(s),
+                            Some(gifboard_core::query::AttachmentType::LocalFile(s)) => {
+                                QString::from(s)
+                            }
+                            Some(gifboard_core::query::AttachmentType::RawJpg) => {
+                                QString::from(attachment.blur_preview.clone())
+                            }
+                            None => QString::default(),
+                        };
+
+                        let preview_uri = match attachment.preview_uri {
+                            gifboard_core::query::AttachmentType::Url(s) => QString::from(s),
+                            gifboard_core::query::AttachmentType::LocalFile(s) => QString::from(s),
+                            gifboard_core::query::AttachmentType::RawJpg => {
+                                QString::from(attachment.blur_preview)
+                            }
+                        };
+
                         let width = attachment.width;
                         let height = attachment.height;
                         qt_thread
                             .queue(move |self_async| {
-                                self_async.received_results(
-                                    QString::from(output_uri),
+                                self_async.received_result(
+                                    output_uri,
+                                    hover_uri,
+                                    preview_uri,
                                     width,
                                     height,
                                 );
