@@ -104,7 +104,7 @@ ApplicationWindow {
             onTextEdited: inputDebounce.restart()
 
             onEditingFinished: {
-              if (text.length > 0 && text !== lastQuery) {
+                if (text.length > 0 && text !== lastQuery) {
                     inputDebounce.stop();
                     root.searchResults.query(searchInput.text, true);
                     root.searchResults.clearResults();
@@ -165,11 +165,11 @@ ApplicationWindow {
                                 source: previewImageRoot.imagePreviewUri
                                 playing: true
 
-                                opacity: (!previewImageRoot.hasHoverImage || !previewImageRoot.hovered) ? 2 : 0
+                                opacity: (hoverLoader.item.status != AnimatedImage.Ready || !previewImageRoot.hasHoverImage || !previewImageRoot.hovered) ? 1 : 0
 
                                 Behavior on opacity {
                                     NumberAnimation {
-                                        duration: 360
+                                        duration: 240
                                     }
                                 }
                             }
@@ -190,7 +190,7 @@ ApplicationWindow {
 
                                     source: previouslyHovered ? previewImageRoot.imageHoverUri : ""
 
-                                    opacity: previewImageRoot.hovered ? 2 : 0
+                                    opacity: previewImageRoot.hovered ? 1 : 0
 
                                     Behavior on opacity {
                                         NumberAnimation {
