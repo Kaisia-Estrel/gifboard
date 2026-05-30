@@ -3,6 +3,27 @@ use std::{env, fs, path::PathBuf};
 use cxx_qt_build::{CxxQtBuilder, QmlModule};
 
 fn main() {
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
+        .parent()
+        .unwrap()
+        .canonicalize()
+        .unwrap();
+
+    let main_qml = manifest_dir.join("gifboard-qml/qml/main.qml");
+    let untracked_main_qml = manifest_dir.join("untracked-main.qml");
+    #[cfg(debug_assertions)]
+    {
+        if !untracked_main_qml.exists() {
+            std::fs::copy(&main_qml, &untracked_main_qml).unwrap();
+        }
+    }
+    #[cfg(not(debug_assertions))]
+    {
+        if untracked_main_qml.exists() {
+            std::fs::copy(&untracked_main_qml, &main_qml).unwrap();
+        }
+    }
+
     unsafe {
         CxxQtBuilder::new_qml_module(
             QmlModule::new("com.estrel.gifboard").qml_file("qml/main.qml"),
@@ -19,12 +40,6 @@ fn main() {
         })
         .build();
     }
-
-    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
-        .parent()
-        .unwrap()
-        .canonicalize()
-        .unwrap();
 
     let cxxqt_modules = manifest_dir.join("target/cxxqt/qml_modules");
     let qmlls_ini = manifest_dir.join(".qmlls.ini");

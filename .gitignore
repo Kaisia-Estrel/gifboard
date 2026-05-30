@@ -76,3 +76,5 @@ compile_commands.json
 result
 result/
 .cache
+
+untracked-main.qml
