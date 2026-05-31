@@ -21,18 +21,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         {
             let gifboard_app_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             let cargo_dir = gifboard_app_dir.parent().unwrap();
-            let untracked_qmlfile = cargo_dir.join("untracked-main.qml");
+            let untracked_dir = cargo_dir.join("untracked");
 
-            if !untracked_qmlfile.exists() {
+            if !untracked_dir.exists() {
+                eprintln!("untracked/ doesnt exist, creating...");
+                std::fs::create_dir(&untracked_dir).unwrap();
+            }
+
+            let untracked_main_qml = untracked_dir.join("main.qml");
+
+            if !untracked_main_qml.exists() {
+                eprintln!("untracked/main.qml doesnt exist, creating...");
                 let main_qml = cargo_dir
                     .join("gifboard-qml/qml/main.qml")
                     .canonicalize()
                     .unwrap();
-                std::fs::copy(&main_qml, &untracked_qmlfile).unwrap();
+                std::fs::copy(&main_qml, &untracked_main_qml).unwrap();
             }
 
             engine.load(&QUrl::from_local_file(&QString::from(
-                untracked_qmlfile.canonicalize().unwrap().to_str().unwrap(),
+                untracked_main_qml.canonicalize().unwrap().to_str().unwrap(),
             )));
         }
         #[cfg(not(debug_assertions))]

@@ -9,16 +9,11 @@ fn main() {
         .canonicalize()
         .unwrap();
 
-    let main_qml = manifest_dir.join("gifboard-qml/qml/main.qml");
-    let untracked_main_qml = manifest_dir.join("untracked-main.qml");
-    #[cfg(debug_assertions)]
-    {
-        if !untracked_main_qml.exists() {
-            std::fs::copy(&main_qml, &untracked_main_qml).unwrap();
-        }
-    }
     #[cfg(not(debug_assertions))]
     {
+        let main_qml = manifest_dir.join("gifboard-qml/qml/main.qml");
+        let untracked_dir = manifest_dir.join("untracked");
+        let untracked_main_qml = untracked_dir.join("main.qml");
         if untracked_main_qml.exists() {
             std::fs::copy(&untracked_main_qml, &main_qml).unwrap();
         }
