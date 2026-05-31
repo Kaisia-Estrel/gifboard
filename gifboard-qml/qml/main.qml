@@ -21,13 +21,6 @@ ApplicationWindow {
             x = (Screen.width - width) / 2;
             y = (Screen.height - height) / 2;
             requestActivate();
-            searchInput.forceActiveFocus();
-        }
-    }
-
-    onActiveFocusItemChanged: {
-        if (activeFocusItem !== searchInput) {
-            searchInput.forceActiveFocus();
         }
     }
 
@@ -38,7 +31,7 @@ ApplicationWindow {
             close();
             LayerShell.Window.layer = LayerShell.Window.LayerOverlay;
             LayerShell.Window.anchors = (LayerShell.Window.AnchorTop | LayerShell.Window.AnchorLeft | LayerShell.Window.AnchorRight | LayerShell.Window.AnchorBottom);
-            LayerShell.Window.exclusionZone = 0;
+            LayerShell.Window.keyboardInteractivity = LayerShell.Window.KeyboardInteractivityExclusive;
             show();
         } else {
             x11Manager.grabInput();
@@ -302,7 +295,6 @@ ApplicationWindow {
                     repeat: false
                     interval: 1500
                     onTriggered: {
-                        console.log("Throttled");
                         root.searchResults.query(searchInput.text, false);
                     }
                 }
