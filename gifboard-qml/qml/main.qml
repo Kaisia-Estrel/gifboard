@@ -113,6 +113,9 @@ ApplicationWindow {
         }
 
         Item {
+            id: gifBrowser
+            property var selectedIndices: new Set()
+
             Layout.fillWidth: true
             Layout.fillHeight: true
 
@@ -146,61 +149,13 @@ ApplicationWindow {
                             required property string imageHoverUri
                             required property string imageOutputUri
                             required property int imageHeight
+                            required property int index
                             width: column.width
                             height: imageHeight
                             property bool hovered: false
                             property bool hasHoverImage: imageHoverUri !== ""
 
-                            Rectangle {
-                                anchors.fill: parent
-                                color: "#505F71"
-                            }
-
-                            AnimatedImage {
-                                id: previewImage
-
-                                anchors.fill: parent
-                                fillMode: Image.PreserveAspectFit
-
-                                source: previewImageRoot.imagePreviewUri
-                                playing: true
-
-                                opacity: (hoverLoader.item.status != AnimatedImage.Ready || !previewImageRoot.hasHoverImage || !previewImageRoot.hovered) ? 1 : 0
-
-                                Behavior on opacity {
-                                    NumberAnimation {
-                                        duration: 240
-                                    }
-                                }
-                            }
-
-                            Loader {
-                                id: hoverLoader
-                                anchors.fill: parent
-                                active: previewImageRoot.hasHoverImage
-                                sourceComponent: AnimatedImage {
-                                    id: hoverImage
-
-                                    anchors.fill: parent
-                                    fillMode: Image.PreserveAspectFit
-
-                                    playing: previewImageRoot.hovered
-
-                                    property bool previouslyHovered: false
-
-                                    source: previouslyHovered ? previewImageRoot.imageHoverUri : ""
-
-                                    opacity: previewImageRoot.hovered ? 1 : 0
-
-                                    Behavior on opacity {
-                                        NumberAnimation {
-                                            duration: 240
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Timer so that hoverimages don't all loud when flicking through the browser
+                            // Timer so that hoverimages don't all load when flicking through the browser
                             Timer {
                                 id: hoverTimer
                                 interval: 300
@@ -213,6 +168,7 @@ ApplicationWindow {
                             MouseArea {
                                 anchors.fill: parent
                                 hoverEnabled: previewImageRoot.hasHoverImage
+                                propagateComposedEvents: true
                                 onEntered: {
                                     previewImageRoot.hovered = true;
                                     hoverLoader.item.currentFrame = previewImage.currentFrame;
@@ -221,6 +177,111 @@ ApplicationWindow {
                                 onExited: {
                                     previewImageRoot.hovered = false;
                                     hoverTimer.stop();
+                                }
+                                onClicked: mouse => {
+                                    if (gifBrowser.selectedIndices.has(previewImageRoot.index)) {
+                                        gifBrowser.selectedIndices.delete(previewImageRoot.index);
+                                    } else {
+                                        gifBrowser.selectedIndices.add(previewImageRoot.index);
+                                    }
+                                    gifBrowser.selectedIndicesChanged();
+                                    mouse.accepted = true;
+                                }
+                            }
+
+                            Rectangle {
+                                id: previewImageContainer
+                                anchors.fill: parent
+                                color: "#505F71"
+                                border.width: 2
+                                border.color: gifBrowser.selectedIndices.has(previewImageRoot.index) ? "red" : "blue"
+
+                                Image {
+                                    id: blurPreviewImage
+                                    anchors.fill: parent
+                                    anchors.margins: previewImageContainer.border.width
+                                    fillMode: Image.PreserveAspectFit
+                                    visible: previewImage.status != Image.Ready
+                                    source: previewImageRoot.blurPreview
+                                }
+
+                                AnimatedImage {
+                                    id: previewImage
+                                    anchors.fill: parent
+                                    anchors.margins: previewImageContainer.border.width
+                                    fillMode: Image.PreserveAspectFit
+
+                                    property bool loadedPreview: false
+                                    asynchronous: true
+
+                                    source: previewImageRoot.imagePreviewUri
+                                    playing: true
+                                }
+
+                                Loader {
+                                    id: hoverLoader
+                                    anchors.fill: parent
+                                    anchors.margins: previewImageContainer.border.width
+                                    active: previewImageRoot.hasHoverImage
+                                    sourceComponent: AnimatedImage {
+                                        id: hoverImage
+
+                                        anchors.fill: parent
+                                        fillMode: Image.PreserveAspectFit
+
+                                        playing: previewImageRoot.hovered
+
+                                        property bool previouslyHovered: false
+                                        visible: previewImageRoot.hovered
+                                        source: previouslyHovered ? previewImageRoot.imageHoverUri : ""
+
+                                        Rectangle {
+                                            id: loadingBar
+                                            anchors.left: parent.left
+                                            anchors.margins: 10
+                                            implicitHeight: 10
+                                            color: "blue"
+
+                                            anchors.top: parent.top
+
+                                            state: gifPreviews.contentY >= previewImageRoot.y ? "bottom" : "top"
+
+                                            states: [
+                                                State {
+                                                    name: "top"
+                                                    AnchorChanges {
+                                                        target: loadingBar
+                                                        anchors.top: parent.top
+                                                        anchors.bottom: undefined
+                                                    }
+                                                },
+                                                State {
+                                                    name: "bottom"
+                                                    AnchorChanges {
+                                                        target: loadingBar
+                                                        anchors.top: undefined
+                                                        anchors.bottom: parent.bottom
+                                                    }
+                                                }
+                                            ]
+                                            visible: hoverImage.status != AnimatedImage.Ready
+                                        }
+                                        onProgressChanged: {
+                                            loadingBar.width = hoverImage.progress * (parent.width - loadingBar.anchors.margins * 2);
+                                        }
+                                    }
+                                }
+                                Rectangle {
+                                    anchors.fill: parent
+                                    anchors.margins: previewImageContainer.border.width
+                                    color: "black"
+                                    opacity: previewImageRoot.hovered ? 0 : 0.2
+
+                                    Behavior on opacity {
+                                        NumberAnimation {
+                                            duration: 150
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -280,6 +341,14 @@ ApplicationWindow {
                     }
                     columnModels = temp;
                 }
+
+                MouseArea {
+                    anchors.fill: parent
+                    propagateComposedEvents: true
+                    onClicked: mouse => {
+                        mouse.accepted = false;
+                    }
+                }
             }
         }
     }
@@ -292,6 +361,7 @@ ApplicationWindow {
         }
 
         property var columnHeights: []
+        property int currentIndex: 0
 
         function resetHeights() {
             let temp = [];
@@ -327,12 +397,16 @@ ApplicationWindow {
                 imageOutputUri: output_uri,
                 imageHoverUri: hover_uri,
                 imagePreviewUri: preview_uri,
-                imageHeight: height / (width / colWidth)
+                blurPreview: blur_preview,
+                imageHeight: height / (width / colWidth),
+                index: currentIndex
             });
             columnHeights[shortestColumn] += height;
+            currentIndex++;
         }
 
         property var clearResults: () => {
+            currentIndex = 0;
             resetHeights();
             for (let i = 0; i < gifPreviews.columnCount; i++) {
                 gifPreviews.columnModels[i].clear();
