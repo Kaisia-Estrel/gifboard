@@ -159,30 +159,6 @@ ApplicationWindow {
                                 }
                             }
 
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: previewImageRoot.hasHoverImage
-                                propagateComposedEvents: true
-                                onEntered: {
-                                    previewImageRoot.hovered = true;
-                                    hoverLoader.item.currentFrame = previewImage.currentFrame;
-                                    hoverTimer.start();
-                                }
-                                onExited: {
-                                    previewImageRoot.hovered = false;
-                                    hoverTimer.stop();
-                                }
-                                onClicked: mouse => {
-                                    if (gifBrowser.selectedIndices.has(previewImageRoot.index)) {
-                                        gifBrowser.selectedIndices.delete(previewImageRoot.index);
-                                    } else {
-                                        gifBrowser.selectedIndices.add(previewImageRoot.index);
-                                    }
-                                    gifBrowser.selectedIndicesChanged();
-                                    mouse.accepted = true;
-                                }
-                            }
-
                             Rectangle {
                                 id: previewImageContainer
                                 anchors.fill: parent
@@ -259,6 +235,12 @@ ApplicationWindow {
                                                 }
                                             ]
                                             visible: hoverImage.status != AnimatedImage.Ready
+
+                                            Behavior on width {
+                                                NumberAnimation {
+                                                    duration: 200
+                                                }
+                                            }
                                         }
                                         onProgressChanged: {
                                             loadingBar.width = hoverImage.progress * (parent.width - loadingBar.anchors.margins * 2);
@@ -275,6 +257,34 @@ ApplicationWindow {
                                         NumberAnimation {
                                             duration: 150
                                         }
+                                    }
+                                }
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                hoverEnabled: previewImageRoot.hasHoverImage
+                                propagateComposedEvents: true
+                                onEntered: {
+                                    previewImageRoot.hovered = true;
+                                    hoverLoader.item.currentFrame = previewImage.currentFrame;
+                                    hoverTimer.start();
+                                }
+                                onExited: {
+                                    previewImageRoot.hovered = false;
+                                    hoverTimer.stop();
+                                }
+                                onClicked: mouse => {
+                                    if (mouse.modifiers & Qt.ShiftModifier) {
+                                        if (gifBrowser.selectedIndices.has(previewImageRoot.index)) {
+                                            gifBrowser.selectedIndices.delete(previewImageRoot.index);
+                                        } else {
+                                            gifBrowser.selectedIndices.add(previewImageRoot.index);
+                                        }
+                                        gifBrowser.selectedIndicesChanged();
+                                        mouse.accepted = true;
+                                    } else {
+                                        root.clipboardManager.copyAsTemp(previewImageRoot.imageOutputUri);
                                     }
                                 }
                             }
@@ -343,6 +353,16 @@ ApplicationWindow {
                     }
                 }
             }
+        }
+    }
+
+    property ClipboardManager clipboardManager: ClipboardManager {
+        onFileCopied: {
+            root.visible = false;
+        }
+
+        onClipboardChanged: {
+            Qt.quit();
         }
     }
 

@@ -25,11 +25,16 @@ fn main() {
         )
         .qt_module("Network")
         .qt_module("Gui")
-        .files(["src/search_results.rs", "src/x11_manager.rs"])
+        .files([
+            "src/search_results.rs",
+            "src/x11_manager.rs",
+            "src/clipboard.rs",
+        ])
         .cpp_file("src/x11_filter.h")
         .cpp_file("src/x11_filter.cpp")
         .cpp_file("src/keysym_to_QTKey.cpp")
         .cpp_file("src/keysym_to_QTKey.h")
+        .cpp_file("src/clipboard.h")
         .cc_builder(|cc| {
             cc.flag_if_supported("-std=c++20");
         })

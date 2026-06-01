@@ -1,5 +1,6 @@
 use std::sync::LazyLock;
 
+pub mod clipboard;
 pub mod config;
 pub mod query;
 
