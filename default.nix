@@ -14,6 +14,7 @@
   stdenv,
   makeWrapper,
   libxcb,
+  libx11,
 }:
 let
 
@@ -47,10 +48,12 @@ rustPlatform.buildRustPackage
     buildInputs = [
       libxkbcommon
       qtEnv
+      libxcb
       libglvnd
+      libx11
     ];
 
-    cargoHash = "sha256-hVGTUNGi+PPfkWe955uUSxPO/MAloBadUhtjesPdSQI=";
+    cargoHash = "sha256-wEx178Puv1JgyXX/quVlMKvJ+diNKOODEN5HA+R0mJM=";
 
     preCheck = ''
       export LD_LIBRARY_PATH="${
@@ -58,6 +61,7 @@ rustPlatform.buildRustPackage
           qtEnv
           libxkbcommon
           libglvnd
+          libxcb
           stdenv.cc.cc.lib
         ]
       }:$LD_LIBRARY_PATH"
@@ -70,6 +74,7 @@ rustPlatform.buildRustPackage
             libxkbcommon
             qtEnv
             libglvnd
+            libxcb
             stdenv.cc.cc.lib
           ]
         }"
