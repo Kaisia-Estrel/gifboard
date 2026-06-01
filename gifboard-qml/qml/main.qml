@@ -359,6 +359,9 @@ ApplicationWindow {
     property ClipboardManager clipboardManager: ClipboardManager {
         onFileCopied: {
             root.visible = false;
+            if (root.x11Manager.onX11()) {
+                root.x11Manager.ungrabInput();
+            }
         }
 
         onClipboardChanged: {

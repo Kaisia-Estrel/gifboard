@@ -38,6 +38,14 @@ pub mod ffi {
         #[cxx_name = "grabInput"]
         fn grab_input(self: Pin<&mut Self>);
 
+        #[qinvokable]
+        #[cxx_name = "ungrabInput"]
+        fn ungrab_input(self: Pin<&mut Self>);
+
+        #[qinvokable]
+        #[cxx_name = "onX11"]
+        fn on_x11(self: Pin<&mut Self>) -> bool;
+
         #[qsignal]
         #[cxx_name = "keyPressed"]
         fn key_pressed(self: Pin<&mut Self>, keycode: u8);
@@ -109,6 +117,9 @@ impl Default for X11ManagerRust {
 }
 
 impl ffi::X11Manager {
+    fn on_x11(self: Pin<&mut Self>) -> bool {
+        on_x11()
+    }
     fn key_received(self: Pin<&mut Self>, keycode: xcb::x::Keycode, qtype: u8) -> bool {
         let keycode = xkb::Keycode::new(keycode.into());
         let direction = if qtype == 0 {
@@ -134,6 +145,14 @@ impl ffi::X11Manager {
         let text = ffi::QString::from(state.key_get_utf8(keycode));
 
         ffi::inject_key_event(qtype.into(), keysym.into(), modifiers.to_int(), &text)
+    }
+
+    fn ungrab_input(self: Pin<&mut Self>) {
+        let conn = &self.x11.as_ref().expect("No X11 Connection").conn;
+        let _ = conn.send_request(&xcb::x::UngrabKeyboard {
+            time: xcb::x::CURRENT_TIME,
+        });
+        dbg!("Ungrabbed Keyboard");
     }
 
     fn grab_input(self: Pin<&mut Self>) {
