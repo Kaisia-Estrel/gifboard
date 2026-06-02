@@ -21,26 +21,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         {
             let gifboard_app_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
             let cargo_dir = gifboard_app_dir.parent().unwrap();
-            let untracked_dir = cargo_dir.join("untracked");
+            let untracked_dir = &cargo_dir.join("untracked");
 
             if !untracked_dir.exists() {
                 eprintln!("untracked/ doesnt exist, creating...");
                 std::fs::create_dir(&untracked_dir).unwrap();
             }
 
-            let untracked_main_qml = untracked_dir.join("main.qml");
+            let untracked_file = move |file: &str, untracked: &str| {
+                let file = cargo_dir.join(file);
+                let untracked_path = untracked_dir.join(untracked);
 
-            if !untracked_main_qml.exists() {
-                eprintln!("untracked/main.qml doesnt exist, creating...");
-                let main_qml = cargo_dir
-                    .join("gifboard-qml/qml/main.qml")
-                    .canonicalize()
-                    .unwrap();
-                std::fs::copy(&main_qml, &untracked_main_qml).unwrap();
-            }
+                if !untracked_path.exists() {
+                    eprintln!(
+                        "'{}' doesnt exist, creating...",
+                        untracked_path.to_string_lossy()
+                    )
+                }
+                std::fs::copy(file, untracked_path).expect("Failed to copy to untracked path");
+            };
+            untracked_file("gifboard-qml/qml/main.qml", "main.qml");
 
             engine.load(&QUrl::from_local_file(&QString::from(
-                untracked_main_qml.canonicalize().unwrap().to_str().unwrap(),
+                untracked_dir.join("main.qml").to_str().unwrap(),
             )));
         }
         #[cfg(not(debug_assertions))]

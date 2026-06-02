@@ -94,19 +94,6 @@
           inherit (craneLib.crateNameFromCargoToml { inherit src; }) version;
         };
 
-        # fileSetForCrate =
-        #   crate:
-        #   lib.fileset.toSource {
-        #     root = ./.;
-        #     fileset = lib.fileset.unions [
-        #       ./Cargo.toml
-        #       ./Cargo.lock
-        #       (craneLib.fileset.commonCargoSources ./gifboard-core)
-        #       (craneLib.fileset.commonCargoSources ./gifboard-qml)
-        #       (craneLib.fileset.commonCargoSources crate)
-        #     ];
-        #   };
-
         gifboard = craneLib.buildPackage (
           individualCrateArgs
           // {
@@ -158,6 +145,14 @@
           hardeningDisable = [ "fortify" ];
           RUSTC_WRAPPER = "${pkgs.sccache}/bin/sccache";
 
+          LD_LIBRARY_PATH = lib.makeLibraryPath [
+            pkgs.stdenv.cc.cc.lib
+            qtEnv
+            pkgs.libxkbcommon
+            pkgs.libglvnd
+            pkgs.libxcb
+          ];
+
           packages = [
             pkgs.pkg-config
             pkgs.binutils
@@ -176,6 +171,8 @@
             pkgs.dwm
             gitWrapper
           ];
+
+          inherit (commonArgs) buildInputs nativeBuildInputs;
         };
       }
     );
