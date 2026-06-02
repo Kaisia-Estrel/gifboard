@@ -2,7 +2,6 @@ use cxx_qt::casting::Upcast;
 use cxx_qt_lib::QGuiApplication;
 use cxx_qt_lib::QQmlApplicationEngine;
 use cxx_qt_lib::QQmlEngine;
-use cxx_qt_lib::QString;
 use cxx_qt_lib::QUrl;
 use std::pin::Pin;
 
@@ -25,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             if !untracked_dir.exists() {
                 eprintln!("untracked/ doesnt exist, creating...");
-                std::fs::create_dir(&untracked_dir).unwrap();
+                std::fs::create_dir(untracked_dir).unwrap();
             }
 
             let untracked_file = move |file: &str, untracked: &str| {
@@ -36,13 +35,70 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     eprintln!(
                         "'{}' doesnt exist, creating...",
                         untracked_path.to_string_lossy()
-                    )
+                    );
+                    std::fs::copy(file, untracked_path).expect("Failed to copy to untracked path");
+                } else if std::fs::metadata(&untracked_path)
+                    .unwrap()
+                    .modified()
+                    .unwrap()
+                    > std::fs::metadata(&file).unwrap().modified().unwrap()
+                {
+                    if std::env::args().any(|arg| arg == "--update-tracked") {
+                        eprintln!("updating '{}'", file.to_string_lossy());
+                        std::fs::copy(&untracked_path, &file)
+                            .expect("Failed to copy untracked path");
+                        return true;
+                    } else {
+                        let mut diff = std::process::Command::new("diff");
+                        diff.args([
+                            "-u",
+                            file.to_str().unwrap(),
+                            untracked_path.to_str().unwrap(),
+                        ]);
+                        let diff_out = String::from_utf8(diff.output().unwrap().stdout).unwrap();
+                        if !diff_out.is_empty() {
+                            eprintln!(
+                                "warning: '{}'\nis newer than '{}' specify '--update-tracked' to update\n\n{diff_out}",
+                                untracked_path.to_string_lossy(),
+                                file.to_string_lossy()
+                            );
+                        }
+                    }
+                } else {
+                    if std::env::args().any(|arg| arg == "--update-untracked") {
+                        eprintln!("updating '{}'", untracked_path.to_string_lossy());
+                        std::fs::copy(&file, &untracked_path)
+                            .expect("Failed to copy untracked path");
+                        return true;
+                    } else {
+                        let mut diff = std::process::Command::new("diff");
+                        diff.args([
+                            "-u",
+                            untracked_path.to_str().unwrap(),
+                            file.to_str().unwrap(),
+                        ]);
+                        let diff_out = String::from_utf8(diff.output().unwrap().stdout).unwrap();
+                        if !diff_out.is_empty() {
+                            eprintln!(
+                                "warning: '{}'\nis newer than '{}' specify '--update-untracked' to update\n\n{diff_out}",
+                                file.to_string_lossy(),
+                                untracked_path.to_string_lossy(),
+                            );
+                        }
+                    }
                 }
-                std::fs::copy(file, untracked_path).expect("Failed to copy to untracked path");
+                false
             };
-            untracked_file("gifboard-qml/qml/main.qml", "main.qml");
+            let mut exit = false;
+            exit = untracked_file("gifboard-qml/qml/main.qml", "main.qml") || exit;
+            exit = untracked_file("gifboard-qml/qml/PreviewImage.qml", "PreviewImage.qml") || exit;
+            exit = untracked_file("gifboard-qml/qml/GifBrowser.qml", "GifBrowser.qml") || exit;
 
-            engine.load(&QUrl::from_local_file(&QString::from(
+            if exit {
+                return Ok(());
+            }
+
+            engine.load(&QUrl::from_local_file(&cxx_qt_lib::QString::from(
                 untracked_dir.join("main.qml").to_str().unwrap(),
             )));
         }

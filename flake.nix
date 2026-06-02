@@ -35,31 +35,6 @@
             pkgs.kdePackages.layer-shell-qt
             pkgs.kdePackages.qtimageformats
           ];
-        gitWrapper = pkgs.writeShellScriptBin "git" ''
-          #!/usr/bin/env bash
-
-          GIT="${pkgs.git}/bin/git"
-          if [[ -t 0 || -p /dev/stdin ]]; then
-            GIFBOARD_DIR="$($GIT rev-parse --show-toplevel)"
-            function check_untracked_age() {
-              local untracked_file="$1"
-              local tracked_file="$2"
-              if [[ -e "$untracked_file" ]]; then
-                local untracked_age="$(stat -c %Y "$untracked_file")"
-                local tracked_age="$(stat -c %Y "$tracked_file")"
-                if (( $untracked_age > $tracked_age )); then
-                  echo -e "\x1b[31mWarning: Untracked $untracked_file is newer than tracked $tracked_file\x1b[0m" >&2
-                fi
-              fi
-            }
-
-            if [[ -e "$GIFBOARD_DIR/untracked" ]]; then
-              check_untracked_age "$GIFBOARD_DIR/untracked/main.qml" "$GIFBOARD_DIR/gifboard-qml/qml/main.qml"
-            fi
-          fi
-
-          exec "$GIT" "$@"
-        '';
 
         craneLib = crane.mkLib pkgs;
         commonArgs = {
@@ -169,7 +144,6 @@
             pkgs.sccache
             pkgs.xdpyinfo
             pkgs.dwm
-            gitWrapper
           ];
 
           inherit (commonArgs) buildInputs nativeBuildInputs;

@@ -105,253 +105,13 @@ ApplicationWindow {
             }
         }
 
-        Item {
+        GifBrowser {
             id: gifBrowser
-            property var selectedIndices: new Set()
+            searchInput: searchInput
+            clipboardManager: root.clipboardManager
 
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-
-            RowLayout {
-                id: gifColumns //Yeah
-                spacing: 10
-                anchors.fill: parent
-
-                Repeater {
-                    id: gifColumnRepeater
-                    model: gifPreviews.columnCount
-
-                    delegate: ListView {
-                        id: column
-                        required property int index
-
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        clip: true
-
-                        spacing: 10
-                        interactive: false
-
-                        onContentHeightChanged: gifPreviews.updateMaxHeight()
-
-                        model: gifPreviews.columnModels[index]
-
-                        delegate: Item {
-                            id: previewImageRoot
-                            required property string imagePreviewUri
-                            required property string imageHoverUri
-                            required property string imageOutputUri
-                            required property string blurPreview
-                            required property int imageHeight
-                            required property int index
-                            width: column.width
-                            height: imageHeight
-                            property bool hovered: false
-                            property bool hasHoverImage: imageHoverUri !== ""
-
-                            // Timer so that hoverimages don't all load when flicking through the browser
-                            Timer {
-                                id: hoverTimer
-                                interval: 300
-                                repeat: false
-                                onTriggered: {
-                                    hoverLoader.item.previouslyHovered = true;
-                                }
-                            }
-
-                            Rectangle {
-                                id: previewImageContainer
-                                anchors.fill: parent
-                                color: "#505F71"
-                                border.width: 2
-                                border.color: gifBrowser.selectedIndices.has(previewImageRoot.index) ? "red" : "blue"
-
-                                Image {
-                                    id: blurPreviewImage
-                                    anchors.fill: parent
-                                    anchors.margins: previewImageContainer.border.width
-                                    fillMode: Image.PreserveAspectFit
-                                    visible: previewImage.status != Image.Ready
-                                    source: previewImageRoot.blurPreview
-                                }
-
-                                AnimatedImage {
-                                    id: previewImage
-                                    anchors.fill: parent
-                                    anchors.margins: previewImageContainer.border.width
-                                    fillMode: Image.PreserveAspectFit
-
-                                    property bool loadedPreview: false
-                                    asynchronous: true
-
-                                    source: previewImageRoot.imagePreviewUri
-                                    playing: true
-                                }
-
-                                Loader {
-                                    id: hoverLoader
-                                    anchors.fill: parent
-                                    anchors.margins: previewImageContainer.border.width
-                                    active: previewImageRoot.hasHoverImage
-                                    sourceComponent: AnimatedImage {
-                                        id: hoverImage
-
-                                        anchors.fill: parent
-                                        fillMode: Image.PreserveAspectFit
-
-                                        playing: previewImageRoot.hovered
-
-                                        property bool previouslyHovered: false
-                                        visible: previewImageRoot.hovered
-                                        source: previouslyHovered ? previewImageRoot.imageHoverUri : ""
-
-                                        Rectangle {
-                                            id: loadingBar
-                                            anchors.left: parent.left
-                                            anchors.margins: 10
-                                            implicitHeight: 10
-                                            color: "blue"
-
-                                            anchors.top: parent.top
-
-                                            state: gifPreviews.contentY >= previewImageRoot.y ? "bottom" : "top"
-
-                                            states: [
-                                                State {
-                                                    name: "top"
-                                                    AnchorChanges {
-                                                        target: loadingBar
-                                                        anchors.top: parent.top
-                                                        anchors.bottom: undefined
-                                                    }
-                                                },
-                                                State {
-                                                    name: "bottom"
-                                                    AnchorChanges {
-                                                        target: loadingBar
-                                                        anchors.top: undefined
-                                                        anchors.bottom: parent.bottom
-                                                    }
-                                                }
-                                            ]
-                                            visible: hoverImage.status != AnimatedImage.Ready
-
-                                            Behavior on width {
-                                                NumberAnimation {
-                                                    duration: 200
-                                                }
-                                            }
-                                        }
-                                        onProgressChanged: {
-                                            loadingBar.width = hoverImage.progress * (parent.width - loadingBar.anchors.margins * 2);
-                                        }
-                                    }
-                                }
-                                Rectangle {
-                                    anchors.fill: parent
-                                    anchors.margins: previewImageContainer.border.width
-                                    color: "black"
-                                    opacity: previewImageRoot.hovered ? 0 : 0.2
-
-                                    Behavior on opacity {
-                                        NumberAnimation {
-                                            duration: 150
-                                        }
-                                    }
-                                }
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                hoverEnabled: previewImageRoot.hasHoverImage
-                                propagateComposedEvents: true
-                                onEntered: {
-                                    previewImageRoot.hovered = true;
-                                    hoverLoader.item.currentFrame = previewImage.currentFrame;
-                                    hoverTimer.start();
-                                }
-                                onExited: {
-                                    previewImageRoot.hovered = false;
-                                    hoverTimer.stop();
-                                }
-                                onClicked: mouse => {
-                                    if (mouse.modifiers & Qt.ShiftModifier) {
-                                        if (gifBrowser.selectedIndices.has(previewImageRoot.index)) {
-                                            gifBrowser.selectedIndices.delete(previewImageRoot.index);
-                                        } else {
-                                            gifBrowser.selectedIndices.add(previewImageRoot.index);
-                                        }
-                                        gifBrowser.selectedIndicesChanged();
-                                        mouse.accepted = true;
-                                    } else {
-                                        root.clipboardManager.copyAsTemp(previewImageRoot.imageOutputUri);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Flickable {
-                id: gifPreviews
-                anchors.fill: parent
-                contentWidth: searchInput.width
-                clip: true
-
-                Timer {
-                    id: gifPreviewsThrottler
-                    triggeredOnStart: true
-                    repeat: false
-                    interval: 1500
-                    onTriggered: {
-                        root.searchResults.query(searchInput.text, false);
-                    }
-                }
-
-                onContentYChanged: {
-                    for (let i = 0; i < columnCount; i++) {
-                        let columnListView = gifColumnRepeater.itemAt(i);
-                        if (columnListView) {
-                            columnListView.contentY = contentY;
-                        }
-                    }
-                    if (contentHeight - contentY < (height * 4) && !gifPreviewsThrottler.running) {
-                        gifPreviewsThrottler.start();
-                    }
-                }
-
-                property int columnCount: 3
-                property var columnModels: []
-
-                function updateMaxHeight() {
-                    let minVal = Infinity;
-                    for (let i = 0; i < columnCount; i++) {
-                        let columnListView = gifColumnRepeater.itemAt(i);
-                        if (columnListView) {
-                            minVal = Math.min(minVal, columnListView.contentHeight);
-                        }
-                    }
-                    contentHeight = minVal;
-                }
-
-                Component.onCompleted: {
-                    let temp = [];
-                    let heights = [];
-                    for (let i = 0; i < gifPreviews.columnCount; i++) {
-                        temp.push(Qt.createQmlObject("import QtQuick; ListModel {}", gifPreviews));
-                        heights.push(0);
-                    }
-                    columnModels = temp;
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    propagateComposedEvents: true
-                    onClicked: mouse => {
-                        mouse.accepted = false;
-                    }
-                }
+            onQuery: query => {
+                root.searchResults.query(query, false);
             }
         }
     }
@@ -381,27 +141,26 @@ ApplicationWindow {
 
         function resetHeights() {
             let temp = [];
-            for (let i = 0; i < gifPreviews.columnCount; i++) {
+            for (let i = 0; i < gifBrowser.columnCount; i++) {
                 temp.push(0);
             }
             columnHeights = temp;
         }
 
         onReceivedResult: (output_uri, hover_uri, preview_uri, blur_preview, width, height) => {
-            if (gifPreviews.columnModels.length === 0) {
+            if (gifBrowser.columnModels.length === 0) {
                 return;
             }
 
-            if (columnHeights.length !== gifPreviews.columnCount) {
+            if (columnHeights.length !== gifBrowser.columnCount) {
                 resetHeights();
             }
 
             let shortestColumn = 0;
             let minHeight = Infinity;
             let maxHeight = 0;
-            let colWidth = gifColumnRepeater.itemAt(0).width;
 
-            for (let i = 0; i < gifPreviews.columnCount; i++) {
+            for (let i = 0; i < gifBrowser.columnCount; i++) {
                 let colHeight = columnHeights[i];
                 if (colHeight < minHeight) {
                     minHeight = colHeight;
@@ -409,12 +168,13 @@ ApplicationWindow {
                 }
             }
 
-            gifPreviews.columnModels[shortestColumn].append({
+            gifBrowser.columnModels[shortestColumn].append({
                 imageOutputUri: output_uri,
                 imageHoverUri: hover_uri,
                 imagePreviewUri: preview_uri,
                 blurPreview: blur_preview,
-                imageHeight: height / (width / colWidth),
+                imageHeight: height,
+                imageWidth: width,
                 index: currentIndex
             });
             columnHeights[shortestColumn] += height;
@@ -424,8 +184,8 @@ ApplicationWindow {
         property var clearResults: () => {
             currentIndex = 0;
             resetHeights();
-            for (let i = 0; i < gifPreviews.columnCount; i++) {
-                gifPreviews.columnModels[i].clear();
+            for (let i = 0; i < gifBrowser.columnCount; i++) {
+                gifBrowser.columnModels[i].clear();
             }
         }
     }
