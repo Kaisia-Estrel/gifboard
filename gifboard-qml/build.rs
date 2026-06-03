@@ -33,6 +33,7 @@ fn main() {
                 "src/search_results.rs",
                 "src/x11_manager.rs",
                 "src/clipboard.rs",
+                "src/notification.rs",
             ])
             .cpp_file("src/x11_filter.h")
             .cpp_file("src/x11_filter.cpp")

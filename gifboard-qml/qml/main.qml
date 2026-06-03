@@ -117,7 +117,14 @@ ApplicationWindow {
     }
 
     property ClipboardManager clipboardManager: ClipboardManager {
-        onUrlsCopied: {
+
+        property var notif: Notification {
+            summary: "Attachment Copied"
+            body: "You can paste the image from the clipboard."
+        }
+
+        onUrlsCopied: urls => {
+            notif.show();
             root.visible = false;
             if (root.x11Manager.onX11()) {
                 root.x11Manager.ungrabInput();

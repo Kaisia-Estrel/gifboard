@@ -10,6 +10,7 @@ cxx-qt = "0.8.1"
 cxx-qt-lib = { version = "0.8.1", features = ["qt_full"] }
 xcb = { version = "1.7.0", features = ["xkb", "as-raw-xcb-connection"] }
 xkbcommon = { version = "0.9.0", features = ["x11"] }
+notify-rust = "4.17.0"
 
 [build-dependencies]
 cxx-qt-build = { version = "0.8.1", features = ["link_qt_object_files"] }

@@ -10,9 +10,11 @@ pub mod ffi {
 
     unsafe extern "C++" {
         include!("cxx-qt-lib/qstring.h");
+        include!("cxx-qt-lib/qstringlist.h");
         include!("cxx-qt-lib/qurl.h");
         include!("cxx-qt-lib/qlist.h");
         type QString = cxx_qt_lib::QString;
+        type QStringList = cxx_qt_lib::QStringList;
         type QUrl = cxx_qt_lib::QUrl;
         type QList_QUrl = cxx_qt_lib::QList<QUrl>;
 
@@ -77,7 +79,7 @@ pub mod ffi {
 
         #[qsignal]
         #[cxx_name = "urlsCopied"]
-        fn urls_copied(self: Pin<&mut Self>);
+        fn urls_copied(self: Pin<&mut Self>, urls: QStringList);
 
         #[qsignal]
         #[cxx_name = "releasedOwnership"]
@@ -182,7 +184,11 @@ impl ffi::ClipboardManager {
         });
         // capture lifetime of guard so it may be called for the lifetime of the program
         self.as_mut().capture_guard(guard);
-        self.as_mut().urls_copied();
+        let mut paths = ffi::QStringList::default();
+        for i in urls.into_iter() {
+            paths.append(i.to_local_file_or_default());
+        }
+        self.as_mut().urls_copied(paths);
     }
 
     fn copy_urls_to_tmp(self: Pin<&mut Self>, urls: ffi::QList_QUrl) {
@@ -205,7 +211,11 @@ impl ffi::ClipboardManager {
                             });
 
                             self_async.as_mut().capture_guard(guard);
-                            self_async.as_mut().urls_copied();
+                            let mut paths = ffi::QStringList::default();
+                            for i in urls.into_iter() {
+                                paths.append(i.to_local_file_or_default());
+                            }
+                            self_async.as_mut().urls_copied(paths);
                         })
                         .unwrap();
                 }
