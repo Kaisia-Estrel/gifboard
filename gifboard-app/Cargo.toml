@@ -13,3 +13,6 @@ xdg = "3.0.0"
 
 [build-dependencies]
 cxx-qt-build = { version = "0.8.1", features = ["link_qt_object_files"] }
+
+[package.metadata.appimage]
+auto_link = true
