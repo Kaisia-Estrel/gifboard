@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=gifboard
+Exec=gifboard
+Icon=gifboard
+Type=Application
+Categories=Utility;
+X-AppImage-Version=0.1.0
